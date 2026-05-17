@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IoU Calculator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #1e1e2e;
+    --green: #00ff9d;
+    --red: #ff4d6d;
+    --yellow: #ffd60a;
+    --text: #e0e0f0;
+    --muted: #555570;
+    --blue: #4cc9f0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 2rem;
+    letter-spacing: -1px;
+    margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 24px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .layout {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    max-width: 1000px;
+    flex-wrap: wrap;
+  }
+
+  .canvas-wrap {
+    flex: 1;
+    min-width: 320px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+  }
+
+  .canvas-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 8px;
+    cursor: crosshair;
+    border: 1px solid var(--border);
+    background: #0d0d15;
+    width: 100%;
+  }
+
+  .side {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .controls {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .ctrl-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  button {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .btn-box1 {
+    background: rgba(0,255,157,0.12);
+    color: var(--green);
+    border: 1px solid rgba(0,255,157,0.25);
+  }
+  .btn-box1:hover, .btn-box1.active {
+    background: rgba(0,255,157,0.22);
+    border-color: var(--green);
+  }
+
+  .btn-box2 {
+    background: rgba(255,77,109,0.12);
+    color: var(--red);
+    border: 1px solid rgba(255,77,109,0.25);
+  }
+  .btn-box2:hover, .btn-box2.active {
+    background: rgba(255,77,109,0.22);
+    border-color: var(--red);
+  }
+
+  .btn-reset {
+    background: rgba(85,85,112,0.2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-reset:hover { color: var(--text); border-color: var(--muted); }
+
+  .btn-calc {
+    background: linear-gradient(135deg, rgba(0,255,157,0.2), rgba(76,201,240,0.2));
+    color: var(--blue);
+    border: 1px solid rgba(76,201,240,0.4);
+    justify-content: center;
+    font-size: 0.85rem;
+  }
+  .btn-calc:hover {
+    background: linear-gradient(135deg, rgba(0,255,157,0.3), rgba(76,201,240,0.3));
+    border-color: var(--blue);
+  }
+
+  .results {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .res-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  .stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+  }
+  .stat:last-child { border-bottom: none; }
+  .stat-label { color: var(--muted); }
+  .stat-val { font-weight: 700; }
+  .green { color: var(--green); }
+  .red { color: var(--red); }
+  .yellow { color: var(--yellow); }
+  .blue { color: var(--blue); }
+
+  .iou-display {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 16px;
+    text-align: center;
+  }
+
+  .iou-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .iou-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    transition: all 0.3s;
+  }
+
+  .iou-bar-wrap {
+    margin-top: 12px;
+    background: var(--border);
+    border-radius: 99px;
+    height: 6px;
+    overflow: hidden;
+  }
+
+  .iou-bar {
+    height: 100%;
+    border-radius: 99px;
+    width: 0%;
+    transition: width 0.5s ease, background 0.3s;
+    background: var(--green);
+  }
+
+  .iou-interp {
+    margin-top: 8px;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .mode-indicator {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+  .mode-box1 { background: rgba(0,255,157,0.15); color: var(--green); border: 1px solid rgba(0,255,157,0.3); }
+  .mode-box2 { background: rgba(255,77,109,0.15); color: var(--red); border: 1px solid rgba(255,77,109,0.3); }
+  .mode-none { background: rgba(85,85,112,0.15); color: var(--muted); border: 1px solid var(--border); }
+
+  .hint {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 6px;
+    letter-spacing: 1px;
+  }
+
+  .coords {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .coord-row { display: flex; justify-content: space-between; }
+  .coord-val { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<h1>IoU Calculator</h1>
+<p class="subtitle">Draw · Overlap · Measure</p>
+
+<div class="layout">
+  <div class="canvas-wrap">
+    <div class="canvas-label">
+      <span class="dot" style="background:var(--green)"></span>
+      Canvas — Draw Bounding Boxes
+    </div>
+    <span class="mode-indicator mode-none" id="modeTag">No Mode</span>
+    <canvas id="cvs" height="420"></canvas>
+    <p class="hint">Select a box mode → click & drag on canvas</p>
+  </div>
+
+  <div class="side">
+
+    <div class="iou-display">
+      <div class="iou-label">IoU Score</div>
+      <div class="iou-val" id="iouVal" style="color:var(--muted)">—</div>
+      <div class="iou-bar-wrap"><div class="iou-bar" id="iouBar"></div></div>
+      <div class="iou-interp" id="iouInterp">draw both boxes first</div>
+    </div>
+
+    <div class="controls">
+      <div class="ctrl-title">Controls</div>
+      <div class="btn-group">
+        <button class="btn-box1" id="btnBox1" onclick="setMode(1)">
+          <span>▣</span> Draw Box 1 (Green)
+        </button>
+        <button class="btn-box2" id="btnBox2" onclick="setMode(2)">
+          <span>▣</span> Draw Box 2 (Red)
+        </button>
+        <button class="btn-calc" onclick="calcIoU()">
+          ⟳ Calculate IoU
+        </button>
+        <button class="btn-reset" onclick="resetAll()">
+          ✕ Reset All
+        </button>
+      </div>
+    </div>
+
+    <div class="results" id="resultsPanel">
+      <div class="res-title">Breakdown</div>
+      <div class="stat"><span class="stat-label">Box 1 Area</span><span class="stat-val green" id="a1">—</span></div>
+      <div class="stat"><span class="stat-label">Box 2 Area</span><span class="stat-val red" id="a2">—</span></div>
+      <div class="stat"><span class="stat-label">Intersection</span><span class="stat-val yellow" id="aI">—</span></div>
+      <div class="stat"><span class="stat-label">Union</span><span class="stat-val blue" id="aU">—</span></div>
+    </div>
+
+    <div class="coords" id="coordsPanel">
+      <div class="coord-row"><span style="color:var(--green)">Box 1</span> <span class="coord-val" id="c1">not drawn</span></div>
+      <div class="coord-row"><span style="color:var(--red)">Box 2</span> <span class="coord-val" id="c2">not drawn</span></div>
+      <div class="coord-row"><span style="color:var(--yellow)">Intersect</span> <span class="coord-val" id="cI">—</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const cvs = document.getElementById('cvs');
+const ctx = cvs.getContext('2d');
+const SCALE = 20; // pixels per grid unit
+let mode = 0;
+let drawing = false;
+let startX, startY;
+let box1 = null, box2 = null;
+let tempBox = null;
+
+function resize() {
+  const w = cvs.parentElement.clientWidth - 32;
+  cvs.width = w;
+  redraw();
+}
+window.addEventListener('resize', resize);
+resize();
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btnBox1').classList.toggle('active', m===1);
+  document.getElementById('btnBox2').classList.toggle('active', m===2);
+  const tag = document.getElementById('modeTag');
+  if(m===1){ tag.className='mode-indicator mode-box1'; tag.textContent='Drawing Box 1'; }
+  else { tag.className='mode-indicator mode-box2'; tag.textContent='Drawing Box 2'; }
+}
+
+function getPos(e) {
+  const r = cvs.getBoundingClientRect();
+  const scaleX = cvs.width / r.width;
+  const scaleY = cvs.height / r.height;
+  const src = e.touches ? e.touches[0] : e;
+  return {
+    x: (src.clientX - r.left) * scaleX,
+    y: (src.clientY - r.top) * scaleY
+  };
+}
+
+cvs.addEventListener('mousedown', e => { if(!mode) return; const p=getPos(e); startX=p.x; startY=p.y; drawing=true; });
+cvs.addEventListener('mousemove', e => {
+  if(!drawing) return;
+  const p=getPos(e);
+  tempBox = makeBox(startX,startY,p.x,p.y);
+  redraw();
+});
+cvs.addEventListener('mouseup', e => {
+  if(!drawing) return;
+  const p=getPos(e);
+  const b = makeBox(startX,startY,p.x,p.y);
+  if(b.w > 5 && b.h > 5) {
+    if(mode===1) box1=b; else box2=b;
+  }
+  drawing=false; tempBox=null;
+  redraw(); updateCoords();
+  if(box1 && box2) calcIoU();
+});
+cvs.addEventListener('touchstart', e=>{e.preventDefault(); cvs.dispatchEvent(new MouseEvent('mousedown',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY}));});
+cvs.addEventListener('touchmove', e=>{e.preventDefault(); cvs.dispatchEvent(new MouseEvent('mousemove',{clientX:e.touches[0].clientX,clientY:e.touches[0].clientY}));});
+cvs.addEventListener('touchend', e=>{e.preventDefault(); cvs.dispatchEvent(new MouseEvent('mouseup',{clientX:e.changedTouches[0].clientX,clientY:e.changedTouches[0].clientY}));});
+
+function makeBox(x1,y1,x2,y2) {
+  return { x:Math.min(x1,x2), y:Math.min(y1,y2), w:Math.abs(x2-x1), h:Math.abs(y2-y1) };
+}
+
+function drawGrid() {
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 1;
+  const step = 30;
+  for(let x=0;x<cvs.width;x+=step) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cvs.height); ctx.stroke(); }
+  for(let y=0;y<cvs.height;y+=step) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cvs.width,y); ctx.stroke(); }
+}
+
+function drawBox(b, color, label) {
+  if(!b) return;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.fillStyle = color.replace(')', ',0.08)').replace('rgb','rgba');
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  // label
+  ctx.fillStyle = color;
+  ctx.font = 'bold 12px Space Mono, monospace';
+  ctx.fillText(label, b.x+6, b.y+16);
+  // corners
+  const px = Math.round(b.x / cvs.width * 100);
+  ctx.font = '10px Space Mono, monospace';
+  ctx.fillText(`TL(${Math.round(b.x)},${Math.round(b.y)})`, b.x+2, b.y-4);
+  ctx.fillText(`BR(${Math.round(b.x+b.w)},${Math.round(b.y+b.h)})`, b.x+b.w-80, b.y+b.h+12);
+}
+
+function getIntersection() {
+  if(!box1||!box2) return null;
+  const ix = Math.max(box1.x, box2.x);
+  const iy = Math.max(box1.y, box2.y);
+  const ix2 = Math.min(box1.x+box1.w, box2.x+box2.w);
+  const iy2 = Math.min(box1.y+box1.h, box2.y+box2.h);
+  if(ix2<=ix || iy2<=iy) return null;
+  return {x:ix, y:iy, w:ix2-ix, h:iy2-iy};
+}
+
+function redraw() {
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  drawGrid();
+  if(box1) drawBox(box1, '#00ff9d', 'Box 1');
+  if(box2) drawBox(box2, '#ff4d6d', 'Box 2');
+  // intersection
+  const inter = getIntersection();
+  if(inter) {
+    ctx.fillStyle = 'rgba(255,214,10,0.25)';
+    ctx.fillRect(inter.x,inter.y,inter.w,inter.h);
+    ctx.strokeStyle = '#ffd60a';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5,3]);
+    ctx.strokeRect(inter.x,inter.y,inter.w,inter.h);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffd60a';
+    ctx.font = 'bold 11px Space Mono, monospace';
+    ctx.fillText('∩', inter.x + inter.w/2 - 5, inter.y + inter.h/2 + 5);
+  }
+  // temp box
+  if(tempBox) {
+    const c = mode===1 ? '#00ff9d' : '#ff4d6d';
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6,3]);
+    ctx.strokeRect(tempBox.x,tempBox.y,tempBox.w,tempBox.h);
+    ctx.setLineDash([]);
+  }
+}
+
+function updateCoords() {
+  document.getElementById('c1').textContent = box1 ? `TL(${Math.round(box1.x)},${Math.round(box1.y)}) BR(${Math.round(box1.x+box1.w)},${Math.round(box1.y+box1.h)})` : 'not drawn';
+  document.getElementById('c2').textContent = box2 ? `TL(${Math.round(box2.x)},${Math.round(box2.y)}) BR(${Math.round(box2.x+box2.w)},${Math.round(box2.y+box2.h)})` : 'not drawn';
+  const inter = getIntersection();
+  document.getElementById('cI').textContent = inter ? `TL(${Math.round(inter.x)},${Math.round(inter.y)}) BR(${Math.round(inter.x+inter.w)},${Math.round(inter.y+inter.h)})` : '—';
+}
+
+function calcIoU() {
+  if(!box1||!box2) { alert('Draw both boxes first!'); return; }
+  const inter = getIntersection();
+  const a1 = Math.round(box1.w * box1.h);
+  const a2 = Math.round(box2.w * box2.h);
+  const aI = inter ? Math.round(inter.w * inter.h) : 0;
+  const aU = a1 + a2 - aI;
+  const iou = aI / aU;
+
+  document.getElementById('a1').textContent = a1 + ' px²';
+  document.getElementById('a2').textContent = a2 + ' px²';
+  document.getElementById('aI').textContent = aI + ' px²';
+  document.getElementById('aU').textContent = aU + ' px²';
+
+  const pct = (iou * 100).toFixed(1);
+  const el = document.getElementById('iouVal');
+  el.textContent = iou.toFixed(4);
+
+  let color, interp;
+  if(iou >= 0.75) { color='var(--green)'; interp='STRONG OVERLAP'; }
+  else if(iou >= 0.5) { color='var(--yellow)'; interp='MODERATE OVERLAP'; }
+  else if(iou > 0) { color='var(--red)'; interp='WEAK OVERLAP'; }
+  else { color='var(--muted)'; interp='NO OVERLAP'; }
+
+  el.style.color = color;
+  document.getElementById('iouBar').style.width = pct + '%';
+  document.getElementById('iouBar').style.background = color;
+  document.getElementById('iouInterp').textContent = interp;
+  updateCoords();
+}
+
+function resetAll() {
+  box1=null; box2=null; tempBox=null; mode=0; drawing=false;
+  document.getElementById('btnBox1').classList.remove('active');
+  document.getElementById('btnBox2').classList.remove('active');
+  const tag=document.getElementById('modeTag');
+  tag.className='mode-indicator mode-none'; tag.textContent='No Mode';
+  document.getElementById('iouVal').textContent='—';
+  document.getElementById('iouVal').style.color='var(--muted)';
+  document.getElementById('iouBar').style.width='0%';
+  document.getElementById('iouInterp').textContent='draw both boxes first';
+  ['a1','a2','aI','aU'].forEach(id=>document.getElementById(id).textContent='—');
+  document.getElementById('c1').textContent='not drawn';
+  document.getElementById('c2').textContent='not drawn';
+  document.getElementById('cI').textContent='—';
+  redraw();
+}
+
+redraw();
+</script>
+</body>
+</html>
